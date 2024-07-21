@@ -9,9 +9,13 @@ from fake_useragent import UserAgent
 from undetected_chromedriver import Chrome, ChromeOptions
 import requests
 
+# for demo only
+from deta import Deta
+deta = Deta("c0ds9umrakg_hGsYySDnQ1mNTAcqK39pQUKqwPtXFuJD")
+
 class TokopediaScraperDEMO:
-    def __init__(self, config_url):
-        self.config = self._fetch_config(config_url)
+    def __init__(self, config_db_name):
+        self.config = self._fetch_config_db(config_db_name)
         self.base_url = self.config.get("base_url", "https://www.tokopedia.com/")
         self.min_delay = self.config.get("min_delay", 8)
         self.max_delay = self.config.get("max_delay", 15)
@@ -26,6 +30,11 @@ class TokopediaScraperDEMO:
         response = requests.get(config_url)
         response.raise_for_status()
         return response.json()
+    
+    def _fetch_config_db(self, config_db_name):
+        db = deta.Base(config_db_name)
+        db_labeled = db.fetch().items
+        return db_labeled[0]
 
     def _delay(self, min_delay=None, max_delay=None):
         min_delay = min_delay if min_delay is not None else self.min_delay

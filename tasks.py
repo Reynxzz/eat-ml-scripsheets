@@ -1,6 +1,6 @@
 from celery import Celery
 from celery.schedules import crontab
-from scraper.tokopedia_scraper import TokopediaScraper
+from scraper.tokopedia_scraper_demo import TokopediaScraper
 import pandas as pd
 # import joblib
 import requests
