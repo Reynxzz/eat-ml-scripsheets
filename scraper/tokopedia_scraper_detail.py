@@ -9,18 +9,20 @@ from fake_useragent import UserAgent
 from undetected_chromedriver import Chrome, ChromeOptions
 import requests
 
-class TokopediaScraper:
+class TokopediaScraperDetail:
     def __init__(self, config_url):
         self.config = self._fetch_config(config_url)
         self.base_url = self.config.get("base_url", "https://www.tokopedia.com/")
         self.min_delay = self.config.get("min_delay", 8)
         self.max_delay = self.config.get("max_delay", 15)
-        self.scroll_step = self.config.get("scroll_step", 7)
+        self.scroll_step = 3
         self.min_scroll_delay = self.config.get("min_scroll_delay", 10)
         self.max_scroll_delay = self.config.get("max_scroll_delay", 14)
         self.proxy = self.config.get("proxy")
-        self.selectors = self.config.get("selectors", {})
-        self.categories = self.config.get("categories", ['https://www.tokopedia.com/p/makanan-minuman/bahan-kue'])
+        self.selectors = {
+                        'seller': ('h2', 'css-1wdzqxj-unf-heading e1qvo2ff2'),
+                        }
+        self.products = ['https://www.tokopedia.com/escendolelizabeth/air-daun-suji-air-perasan-daun-suji?src=topads']
 
     def _fetch_config(self, config_url):
         response = requests.get(config_url)
@@ -55,8 +57,8 @@ class TokopediaScraper:
             driver.execute_script("window.scrollBy(0, 1000);")
             self._delay(min_scroll_delay, max_scroll_delay)
 
-    def fetch_category_data(self, driver, category_link, headless):
-        url = f"{category_link}"
+    def fetch_product_data(self, driver, product_link, headless):
+        url = f"{product_link}"
         driver.get(url)
         self._delay(7, 10)
 
@@ -64,31 +66,20 @@ class TokopediaScraper:
         content = BeautifulSoup(driver.page_source, 'html.parser')
 
         products_data = []
-        for area in tqdm(content.find_all(*self.selectors['product']), desc="Processing Items"):
-            try:
-                title = area.find(*self.selectors['title']).get_text()
-                price = area.find(*self.selectors['price']).get_text()
-                link = area.find('a')['href']
-                sold = area.find(*self.selectors['sold'])
-                sold = sold.get_text() if sold else None
-                location = area.find(*self.selectors['location']).get_text()
-
-                products_data.append({
-                    'title': title,
-                    'price': price,
-                    'link': link,
-                    'sold': sold,
-                    'location': location,
-                    'category': category_link
-                })
-            except Exception as e:
-                print(f"Error processing item: {e}")
-                if headless:
-                    driver.save_screenshot('category_search_results_error.png')
+        try:
+            seller = content.find(*self.selectors['seller']).get_text()
+            products_data.append({
+                'seller': seller,
+                'link': product_link
+            })
+        except Exception as e:
+            print(f"Error processing item: {e}")
+            if headless:
+                driver.save_screenshot('detail_search_results_error.png')
 
         return pd.DataFrame(products_data)
 
-    def scrape_categories(self, headless=True, opsys='linux'):
+    def scrape_details(self, headless=True, opsys='linux'):
         user_agent = UserAgent(browsers='chrome', os=opsys).random
         options = ChromeOptions()
         options.add_argument(f"--user-agent={user_agent}")
@@ -106,14 +97,14 @@ class TokopediaScraper:
         print("WebDriver initialized.")
 
         all_data = pd.DataFrame()
-        for idx, category in enumerate(self.categories):
+        for idx, product in enumerate(self.products):
             self._delay(15, 25)
-            df = self.fetch_category_data(driver, category, headless)
+            df = self.fetch_product_data(driver, product, headless)
             all_data = pd.concat([all_data, df], ignore_index=True)
-            all_data.to_csv(f'data/scraped_category_{idx}.csv', index=False)
+            all_data.to_csv(f'data/scraped_detail_{idx}.csv', index=False)
         print(all_data.shape)
         print(all_data)
-        all_data.to_csv(f'data/all_scraped_category.csv', index=False)
+        all_data.to_csv(f'data/all_scraped_detail.csv', index=False)
         driver.quit()
 
         return all_data
