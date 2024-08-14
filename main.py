@@ -20,7 +20,7 @@ detail_df = load_data_from_csv(DETAIL_SCRAPED_OUTPUT_DIR)
 
 #get full scraped data
 scraped = pd.merge(prod_df, detail_df, on='link', how='left')
-scraped['label'] = 0
+scraped['label'] = 'Legal'
 
 df_to_db(scraped, SEND_PRODUCT_URL)
 
@@ -33,5 +33,5 @@ print(df_pred)
 df_to_db(df_pred, SEND_PRODUCT_URL)
 
 # keywords database
-df_kwrd = extract_keywords(df_pred, df_pred['title'])
+df_kwrd = extract_keywords(df_pred, 'title')
 df_to_db(df_kwrd, SEND_KEYWORD_URL)

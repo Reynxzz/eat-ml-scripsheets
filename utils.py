@@ -54,24 +54,37 @@ def classify_task(df, pipeline):
 
 def extract_keywords(df, text_column):
     """
-    Extract keywords and their frequencies from a DataFrame using CountVectorizer.
-
+    Extract keywords, their frequencies, and sum up 'sold' for items containing each keyword.
+    
     Parameters:
-    df (pd.DataFrame): The DataFrame containing the text data.
+    df (pd.DataFrame): The DataFrame containing the text data and metadata.
     text_column (str): The name of the column containing the text data.
-
+    
     Returns:
-    pd.DataFrame: A DataFrame containing keywords and their frequencies.
+    pd.DataFrame: A DataFrame containing keywords, their frequencies, summed 'sold', and label.
     """
-    vectorizer = CountVectorizer()    
-    X = vectorizer.fit_transform(df[text_column])    
-    keyword_freq = X.toarray().sum(axis=0)    
-    keywords = vectorizer.get_feature_names_out()    
-    df_keywords = pd.DataFrame({
-        'keyword': keywords,
-        'frequency': keyword_freq
-    })
+    vectorizer = CountVectorizer()
     
-    df_keywords = df_keywords.sort_values(by='frequency', ascending=False).reset_index(drop=True)
+    X = vectorizer.fit_transform(df[text_column])
     
-    return df_keywords
+    keyword_freq = X.toarray().sum(axis=0)
+    
+    keywords = vectorizer.get_feature_names_out()
+    
+    df_output = pd.DataFrame(columns=['keyword', 'frequency', 'sold', 'label'])
+    
+    for i, keyword in enumerate(keywords):
+        mask = df[text_column].str.contains(keyword, case=False, na=False)
+        
+        total_sold = df.loc[mask, 'sold'].sum()
+        
+        label = df.loc[mask, 'label'].iloc[0] if not df.loc[mask].empty else None
+        
+        df_output = df_output.append({
+            'keyword': keyword,
+            'frequency': keyword_freq[i],
+            'sold': total_sold,
+            'label': label
+        }, ignore_index=True)
+    
+    return df_output
