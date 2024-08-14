@@ -10,7 +10,7 @@ from undetected_chromedriver import Chrome, ChromeOptions
 import requests
 
 class TokopediaScraperDetail:
-    def __init__(self, config_url):
+    def __init__(self, config_url, products):
         self.config = self._fetch_config(config_url)
         self.base_url = self.config.get("base_url", "https://www.tokopedia.com/")
         self.min_delay = self.config.get("min_delay", 8)
@@ -22,7 +22,7 @@ class TokopediaScraperDetail:
         self.selectors = {
                         'seller': ('h2', 'css-1wdzqxj-unf-heading e1qvo2ff2'),
                         }
-        self.products = ['https://www.tokopedia.com/escendolelizabeth/air-daun-suji-air-perasan-daun-suji?src=topads']
+        self.products = products
 
     def _fetch_config(self, config_url):
         response = requests.get(config_url)
